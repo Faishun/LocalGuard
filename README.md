@@ -4,6 +4,8 @@ LocalGuard is a comprehensive, local-first safety auditing tool for Large Langua
 
 Example report (HTML): [LocalGuard_Report_gemma3_4b.pdf](LocalGuard_Report_gemma3_4b.pdf) — a sample audit report generated for the gemma3_4b model.
 
+[LocalGuard_Report_llava_7b.pdf](LocalGuard_Report_llava_7b.pdf) — a sample audit report generated for the llava_7b model.
+
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
 

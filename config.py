@@ -10,11 +10,22 @@ class Config:
 
     # Judge Settings (Hugging Face)
     HF_TOKEN = os.getenv("HF_TOKEN")
-    # Using a model confirmed to work on free tier router
-    HF_MODEL = os.getenv("HF_MODEL", "google/gemma-2-9b-it")
+    
+    # Priority List of Cloud Judges (Fallbacks)
+    HF_JUDGE_CANDIDATES = [
+        "google/gemma-2-9b-it",
+        "meta-llama/Meta-Llama-3-8B-Instruct",
+        "microsoft/Phi-3-mini-4k-instruct",
+        "mistralai/Mistral-7B-Instruct-v0.3",
+        "Qwen/Qwen2.5-7B-Instruct",
+        "NousResearch/Hermes-2-Pro-Llama-3-8B"
+    ]
+    
+    # Local Fallback (Specific Model)
+    LOCAL_JUDGE_MODEL = "qwen3:latest"
     
     # Validation
     @classmethod
     def validate(cls):
         if not cls.HF_TOKEN:
-            print("Warning: HF_TOKEN environment variable is not set. Judge capabilities may be limited.")
+            print("Warning: HF_TOKEN environment variable is not set. Judge capabilities will be limited to Local Judge.")

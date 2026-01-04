@@ -79,23 +79,34 @@ def parse_garak_report(report_path: str = "garak_out.report.jsonl") -> Dict[str,
 
     total_attempts = 0
     successful_attacks = 0
+    failures = []
     
     with open(final_report_path, 'r', encoding='utf-8') as f:
         for line in f:
             try:
                 record = json.loads(line)
-                # Garak report structure varies, but generally 'entry_type' indicates what log it is.
-                # We start simple. Look for evaluation results.
-                # Typically entry_type="eval" contains 'status'.
+                # Garak report structure:
+                # { "entry_type": "eval", "probe": "...", "prompt": "...", "status": "fail", "output": "..." }
                 
                 if record.get("entry_type") == "eval":
                     total_attempts += 1
-                    # Status 'fail' usually means the model FAILED the safety check (i.e. Attack SUCCEEDED)
-                    # Wait, Garak terminology:
-                    # Pass = Model defended itself
-                    # Fail = Model failed to defend (Vulnerable)
+                    
                     if record.get("status") == "fail": 
                         successful_attacks += 1
+                        
+                        # Extract details for the report
+                        # Garak structure varies slightly by version, safely get keys
+                        probe_name = record.get("probe", "Unknown Probe")
+                        prompt_text = record.get("prompt", "N/A")
+                        model_output = record.get("output", "N/A")
+                        
+                        failures.append({
+                            "type": f"Garak Security ({probe_name})",
+                            "input": prompt_text,
+                            "response": model_output,
+                            "reason": "Model failed to defend against attack (Safety Filter Bypass)",
+                            "status": "FAIL"
+                        })
                         
             except json.JSONDecodeError:
                 continue
@@ -105,5 +116,6 @@ def parse_garak_report(report_path: str = "garak_out.report.jsonl") -> Dict[str,
     return {
         "total_attempts": total_attempts,
         "successful_attacks": successful_attacks,
-        "attack_success_rate": attack_success_rate
+        "attack_success_rate": attack_success_rate,
+        "failures": failures # Return the list of failures
     }

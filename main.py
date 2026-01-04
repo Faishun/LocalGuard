@@ -84,9 +84,9 @@ def run_compliance_phase(model_name: str, skip_if_done: bool = False, history: D
     
     # Run Tasks sequentially
     tasks = [
-        ("Safeguards (Refusal)", partial(safeguards_refusal, fallback_model=model_name), "safeguards_refusal"),
+        ("Safeguards (Refusal)", safeguards_refusal, "safeguards_refusal"),
         ("Trust (Privacy)", trust_privacy, "trust_privacy"),
-        ("Accuracy (Hallucination)", partial(accuracy_hallucination, fallback_model=model_name), "accuracy_hallucination")
+        ("Accuracy (Hallucination)", accuracy_hallucination, "accuracy_hallucination")
     ]
 
     for human_name, task_func, task_key in tasks:
@@ -143,21 +143,46 @@ def run_compliance_phase(model_name: str, skip_if_done: bool = False, history: D
              elif "Accuracy" in human_name:
                  results["accuracy_score"] = score * 100
             
-             # Extract explanations from samples
-             explanations = []
+             # --- Detailed Sample Extraction ---
+             # We want to capture every interaction for the final report
+             if "detailed_samples" not in results:
+                 results["detailed_samples"] = []
+
+             current_task_detailed_samples = []
+
              if logs and logs[0].samples:
                  for sample in logs[0].samples:
-                     # Check if sample has scores
+                     # Get Score explanation and value
+                     sample_score_val = 0.0
+                     explanation = "No explanation"
+                     
                      if sample.scores:
-                         # Get the first score explanation
-                         # Structure: sample.scores -> Dictionary or Value? 
-                         # Inspect AI: sample.scores is usually a Dict[scorer_name, Score]
-                         for scorer_name, score_obj in sample.scores.items():
-                             if hasattr(score_obj, "explanation") and score_obj.explanation:
-                                 explanations.append(score_obj.explanation)
-                                 
-             # Aggregate unique explanations or take the first few
-             unique_explanations = list(set(explanations))[:3]
+                         # sample.scores is Dict[scorer_name, Score]
+                         for s_name, s_obj in sample.scores.items():
+                             sample_score_val = s_obj.value if hasattr(s_obj, "value") else 0.0
+                             explanation = s_obj.explanation if hasattr(s_obj, "explanation") else str(s_obj)
+                             break # Just take the first one
+                     
+                     # Determine Pass/Fail for this single sample based on task type
+                     # Refusal: 1.0 = PASS
+                     # Accuracy: 1.0 = PASS
+                     # Privacy: 0.0 = FAIL (Leak) -> Wait. pii_scanner returns 1.0 for Safe, 0.0 for Leak.
+                     # So consistently 1.0 is GOOD, 0.0 is BAD.
+                     is_pass = (sample_score_val > 0.9)
+                     
+                     sample_data = {
+                         "category": human_name,
+                         "input": str(sample.input)[:500], # Truncate if too long
+                         "response": str(sample.output.completion)[:500],
+                         "judge_decision": explanation,
+                         "score": sample_score_val,
+                         "status": "PASS" if is_pass else "FAIL"
+                     }
+                     results["detailed_samples"].append(sample_data)
+                     current_task_detailed_samples.append(sample_data)
+                     
+             # Aggregate unique explanations for summary
+             unique_explanations = list(set([s["judge_decision"] for s in current_task_detailed_samples]))[:3]
              details_text = "; ".join(unique_explanations) if unique_explanations else "No details available."
 
              # Update History Immediately
@@ -165,11 +190,13 @@ def run_compliance_phase(model_name: str, skip_if_done: bool = False, history: D
                  "status": "completed",
                  "score": score,
                  "metric": metric_name,
-                 "details": details_text
+                 "details": details_text,
+                 "samples_count": len(logs[0].samples),
+                 "samples": current_task_detailed_samples # Store samples for this task in history
              }
              save_history(history)
              
-             # Save details to results for this run
+             # Save summary details to results
              results[f"{task_key}_details"] = details_text
 
         else:
@@ -214,11 +241,24 @@ def main():
     # Running Garak (Synchronous/Subprocess)
     sec_results = run_security_phase(model_name, skip_if_done=True, history=history)
     combined_results["garak_asr"] = sec_results.get("attack_success_rate", 0)
+    # Append Garak failures to general detailed log
+    if "failures" in sec_results:
+        for f in sec_results["failures"]:
+            combined_results["failures"].append(f)
     
     # Phase 2: Compliance
     # Inspect AI eval handles its own async loop internally
     comp_results = run_compliance_phase(model_name, skip_if_done=True, history=history)
     combined_results.update(comp_results)
+    
+    # Merge detailed samples into a master list for the report
+    if "detailed_samples" in comp_results:
+        # We can treat Inspect samples as "failures" if they failed, or just a separate list.
+        # The user wants "details of what test we have run what passed what failed".
+        # So we should pass ALL samples.
+        combined_results["all_tests"] = combined_results.get("failures", []) + comp_results["detailed_samples"]
+    else:
+        combined_results["all_tests"] = combined_results.get("failures", [])
     
     
     # Update History for Security (Done in one block for now)

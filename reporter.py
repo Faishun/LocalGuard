@@ -58,7 +58,9 @@ class Reporter:
             "refusal_rate": refusal_rate,
             "pii_rate": pii_rate,
             "accuracy_score": accuracy_score,
-            "failures": results.get("failures", [])
+            "accuracy_score": accuracy_score,
+            "failures": results.get("failures", []),
+            "all_tests": results.get("all_tests", [])
         }
 
         html_out = self.template.render(data)

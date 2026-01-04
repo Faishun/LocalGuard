@@ -45,7 +45,7 @@ def run_security_phase(model_name: str, skip_if_done: bool = False, history: Dic
 
     # Run Garak in a way that we can show progress or just wait
     # Since it's a subprocess, we just wait.
-    run_garak_scan(model_name)
+    run_garak_scan(model_name, provider=history.get(model_name, {}).get("provider", "ollama"))
     
     # Parse results
     results = parse_garak_report()
@@ -66,7 +66,26 @@ def run_compliance_phase(model_name: str, skip_if_done: bool = False, history: D
 
     # Use native 'ollama' provider for the Target to isolate it from the 'openai' provider used for the Judge
     # This ensures that setting OPENAI_BASE_URL for HF doesn't break the local target connection.
-    inspect_model = f"ollama/{model_name}"
+    # Determine Provider and Construct Inspect Model String
+    provider = history.get(model_name, {}).get("provider", "ollama")
+    
+    inspect_model = ""
+    if provider == "ollama":
+        inspect_model = f"ollama/{model_name}"
+    elif provider == "openai":
+         inspect_model = f"openai/{model_name}"
+    elif provider == "anthropic":
+         inspect_model = f"anthropic/{model_name}"
+    elif provider == "google":
+         inspect_model = f"google/{model_name}"
+    elif provider == "huggingface":
+         inspect_model = f"hf/{model_name}"
+    elif provider == "vllm":
+         inspect_model = f"vllm/{model_name}"
+    else:
+         inspect_model = f"openai/{model_name}" # Default fallback
+    
+    console.print(f"[dim]Compliance Target: {inspect_model}[/dim]")
     
     # Configure 'openai' provider to point to Hugging Face for the Judge
     if Config.HF_TOKEN:
@@ -108,9 +127,30 @@ def run_compliance_phase(model_name: str, skip_if_done: bool = False, history: D
              continue
 
         console.print(f"Running Task: [bold]{human_name}[/bold]...")
-        # Run eval
-        # Note: eval returns a list of logs (one per task)
-        logs = inspect_eval(task_func(), model=inspect_model, limit=10) # limit for speed
+        try:
+            # Run eval
+            # Note: eval returns a list of logs (one per task)
+            logs = inspect_eval(task_func(), model=inspect_model, limit=10) # limit for speed
+        except Exception as e:
+            error_msg = str(e)
+            if "403" in error_msg or "gated repo" in error_msg.lower():
+                console.print(f"[bold red]Error: Access Denied for model {model_name}[/bold red]")
+                console.print(f"[yellow]This is likely a Gated Repository. Please ensure:[/yellow]")
+                console.print("1. You have accepted the license on the Hugging Face model page.")
+                console.print("2. Your HF_TOKEN is valid and has read permissions.")
+                console.print("3. Try a non-gated model like [bold]google/gemma-2-9b-it[/bold].")
+            else:
+                console.print(f"[bold red]Error running task {human_name}: {e}[/bold red]")
+            
+            # Record failure
+            if "failures" not in results: results["failures"] = []
+            results["failures"].append({
+                "type": "Compliance Error",
+                "input": human_name,
+                "reason": str(e),
+                "status": "ERROR"
+            })
+            continue
         
         # Analyze log to get score
         if logs and logs[0].results:
@@ -221,8 +261,14 @@ def main():
         console.print("[yellow]HF_TOKEN not found. Using Local Judge.[/yellow]")
 
     # 1. Get Model Name
-    default_model = "llama3.1:8b"
-    model_name = Prompt.ask("Enter Ollama Model Name", default=default_model)
+    # 1. Provider Selection
+    provider_choices = list(Config.PROVIDERS.keys())
+    provider_label = Prompt.ask("Select Provider", choices=provider_choices, default="Ollama (Local)")
+    provider = Config.PROVIDERS[provider_label]
+    
+    # 2. Get Model Name
+    default_model = "llama3.1:8b" if provider == "ollama" else "gpt-4o"
+    model_name = Prompt.ask("Enter Model Name", default=default_model)
     
     # Data collection to hold all results
     combined_results = {
@@ -244,6 +290,12 @@ def main():
 
     # Run Phases
     history = load_history()
+
+    # Running Garak (Synchronous/Subprocess)
+    # Persist provider info in history immediately
+    if model_name not in history: history[model_name] = {}
+    history[model_name]["provider"] = provider
+    save_history(history)
 
     # Running Garak (Synchronous/Subprocess)
     sec_results = run_security_phase(model_name, skip_if_done=True, history=history)

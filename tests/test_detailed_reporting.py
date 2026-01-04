@@ -73,7 +73,9 @@ def test_detailed_reporting_integration(mock_inspect_eval, mock_garak_scan, mock
     output_path = "test_detailed_report.html"
     if os.path.exists(output_path): os.remove(output_path)
     
-    final_path = reporter.generate_report(combined_results, output_path)
+    # Force HTML generation by disabling WeasyPrint
+    with patch("reporter.WEASYPRINT_AVAILABLE", False):
+        final_path = reporter.generate_report(combined_results, output_path)
     
     assert os.path.exists(output_path)
     with open(output_path, "r", encoding='utf-8') as f:

@@ -8,8 +8,24 @@ class Config:
     OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/v1")
     OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY", "ollama")
 
+    # Cloud Provider Keys
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+    HF_TOKEN = os.getenv("HF_TOKEN") # Used for both Judge and Target if selected
+
+    # Supported Providers
+    PROVIDERS = {
+        "Ollama (Local)": "ollama",
+        "OpenAI (Cloud)": "openai",
+        "Anthropic (Cloud)": "anthropic",
+        "Google (Cloud)": "google",
+        "Hugging Face (Cloud)": "huggingface",
+        "vLLM (Local)": "vllm",
+        "Custom / Other": "openai" # generic openai-compatible
+    }
+
     # Judge Settings (Hugging Face)
-    HF_TOKEN = os.getenv("HF_TOKEN")
     
     # Priority List of Cloud Judges (Fallbacks)
     HF_JUDGE_CANDIDATES = [
@@ -43,4 +59,4 @@ class Config:
     def validate(cls):
         cls.load_eval_config()
         if not cls.HF_TOKEN:
-            print("Warning: HF_TOKEN environment variable is not set. Judge capabilities will be limited to Local Judge.")
+            print("Note: HF_TOKEN not set. Cloud Judge capabilities limited.")

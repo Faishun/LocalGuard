@@ -71,6 +71,10 @@ class Reporter:
 
         html_out = self.template.render(data)
         
+        # Always save HTML first
+        html_output_path = output_path.replace(".pdf", ".html")
+        self.generate_html_report(html_out, html_output_path)
+        
         # Write Output
         if WEASYPRINT_AVAILABLE:
             print(f"Generating PDF report to {output_path}...")
@@ -80,14 +84,10 @@ class Reporter:
                 return output_path
             except Exception as e:
                 # Fallback to HTML if PDF fails generally
-                print(f"Error generating PDF: {e}. Falling back to HTML.")
-                html_output_path = output_path.replace(".pdf", ".html")
-                self.generate_html_report(html_out, html_output_path)
+                print(f"Error generating PDF: {e}. HTML report is available at {html_output_path}.")
                 return html_output_path
         else:
-             print("PDF generation disabled (missing GTK). Saving HTML instead.")
-             html_output_path = output_path.replace('.pdf', '.html')
-             self.generate_html_report(html_out, html_output_path)
+             print("PDF generation disabled (missing GTK). HTML report available.")
              return html_output_path
 
     def generate_html_report(self, html_content: str, output_path: str):

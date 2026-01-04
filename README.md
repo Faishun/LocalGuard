@@ -17,6 +17,9 @@ Example report (HTML): [LocalGuard_Report_gemma3_4b.html](LocalGuard_Report_gemm
     *   **Fairness (New)**: Bias detection using BBQ dataset.
     *   **Toxicity (New)**: Safety constraints against toxic language.
     *   **Data-Driven**: All prompts are customizable in `data/*.json`.
+*   **Multi-Provider Support**: 
+    *   **Local**: Ollama, vLLM, LM Studio (OpenAI Compatible).
+    *   **Cloud**: OpenAI (GPT-4), Anthropic (Claude), Google (Gemini), Hugging Face (Inference API).
 *   **Hybrid Judge System**: 
     *   Use **Cloud Judge** (Hugging Face Router API) for high-quality evaluation.
     *   Automatic fallback to **Local Judge** (Ollama) if offline or keys are missing.
@@ -53,11 +56,13 @@ Example report (HTML): [LocalGuard_Report_gemma3_4b.html](LocalGuard_Report_gemm
 3.  **Configure Environment**:
     Create a `.env` file in the root directory (or rename `.env.example`):
     ```ini
-    # Hugging Face Token (Optional - for Cloud Judge)
+    # Hugging Face Token (Required for HF Provider & Cloud Judge)
     HF_TOKEN=hf_your_token_here
     
-    # Cloud Judge Model (Default: google/gemma-2-9b-it)
-    HF_MODEL=google/gemma-2-9b-it
+    # Cloud Provider Keys (If using specific providers)
+    OPENAI_API_KEY=sk-...
+    ANTHROPIC_API_KEY=sk-ant-...
+    GOOGLE_API_KEY=...
     
     # Ollama Configuration (Defaults)
     OLLAMA_URL=http://localhost:11434/v1
@@ -76,9 +81,10 @@ Run the main orchestrator:
 python -m main
 ```
 
-1.  **Select Model**: Enter the name of the locally running Ollama model you want to audit (e.g., `qwen3:latest`).
-2.  **Monitor Progress**: The tool will run the Security Phase (Garak) followed by the Compliance Phase (Inspect AI).
-3.  **View Report**: Upon completion, a report (e.g., `LocalGuard_Report_qwen3_latest.pdf`) will be generated in the project folder.
+1.  **Select Provider**: Choose from Ollama, OpenAI, Anthropic, Google, Hugging Face, etc.
+2.  **Enter Model**: Input the model name (e.g., `gpt-4o`, `meta-llama/Meta-Llama-3-8B-Instruct`).
+3.  **Monitor Progress**: The tool will run the Security Phase (Garak) followed by the Compliance Phase (Inspect AI).
+4.  **View Report**: Upon completion, a report (e.g., `LocalGuard_Report_gpt-4o.pdf`) will be generated.
 
 ### PDF Generation Utility
 If automatic PDF generation fails or you need to convert an existing HTML report manually, use the included helper script:

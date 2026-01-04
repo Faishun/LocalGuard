@@ -3,36 +3,60 @@ import json
 import os
 from typing import Dict, Any
 
-def run_garak_scan(target_model_name: str, report_prefix: str = "garak_out") -> None:
+def run_garak_scan(target_model_name: str, provider: str = "ollama", report_prefix: str = "garak_out") -> None:
     """
-    Runs Garak security scanner against the specified Ollama model.
+    Runs Garak security scanner against the specified model.
     Results are saved to the default Garak report directory or local.
     """
-    # Verify Ollama is reachable is implicit, Garak handles connection errors usually.
-    
     import sys
     from config import Config
     
-    # Use 'litellm' generator which handles Ollama robustly via 'ollama/model'
-    # This avoids Garak's internal OpenAI whitelist issues.
+    # Base command
     command = [
         sys.executable, "-m", "garak",
-        "--model_type", "litellm",
-        "--model_name", f"ollama/{target_model_name}",
         "--probes", "dan,promptinject",
         "--report_prefix", report_prefix,
         "--generations", "5" 
     ]
     
-    # Pass environment variables to the subprocess to configure OpenAI base URL
+    # Environment Setup
     env = os.environ.copy()
-    env["OPENAI_API_BASE"] = Config.OLLAMA_URL
-    env["OPENAI_API_KEY"] = Config.OLLAMA_API_KEY
     
-    print(f"Starting Garak scan on {target_model_name} (via OpenAI Interface)...")
+    # Logic for Providers
+    print(f"Starting Garak scan on {provider}/{target_model_name}...")
+    
+    if provider == "ollama":
+        # Use litellm with 'ollama/' prefix for best results
+        command.extend(["--model_type", "litellm", "--model_name", f"ollama/{target_model_name}"])
+        env["OPENAI_API_BASE"] = Config.OLLAMA_URL
+        env["OPENAI_API_KEY"] = Config.OLLAMA_API_KEY
+        
+    elif provider == "openai":
+        command.extend(["--model_type", "openai", "--model_name", target_model_name])
+        # Requires OPENAI_API_KEY in env
+        if Config.OPENAI_API_KEY: env["OPENAI_API_KEY"] = Config.OPENAI_API_KEY
+        
+    elif provider == "anthropic":
+        # Garak supports anthropic directly or via litellm
+        command.extend(["--model_type", "litellm", "--model_name", f"anthropic/{target_model_name}"])
+        if Config.ANTHROPIC_API_KEY: env["ANTHROPIC_API_KEY"] = Config.ANTHROPIC_API_KEY
+        
+    elif provider == "huggingface":
+        # Garak hf support
+        command.extend(["--model_type", "huggingface", "--model_name", target_model_name])
+        if Config.HF_TOKEN: env["HF_TOKEN"] = Config.HF_TOKEN
+        
+    elif provider == "google":
+        # Garak supports google via litellm/vertex usually
+        command.extend(["--model_type", "litellm", "--model_name", f"gemini/{target_model_name}"])
+        if Config.GOOGLE_API_KEY: env["GOOGLE_API_KEY"] = Config.GOOGLE_API_KEY
+        
+    else:
+        # Fallback / Custom (assume OpenAI compatible)
+        # For vLLM or others, user likely provided full URL in env or we assume defaults
+        command.extend(["--model_type", "openai", "--model_name", target_model_name])
+        
     try:
-        # Check if garak is installed (it should be)
-        # Check if garak is installed (it should be)
         subprocess.run(command, check=True, env=env)
         print("Garak scan completed.")
     except subprocess.CalledProcessError as e:

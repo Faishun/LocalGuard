@@ -187,3 +187,4 @@ LocalGuard_Report_*.html
 LocalGuard_Report_*.pdf
 garak_out.report.jsonl
 verify_hf_api.py
+plan.md

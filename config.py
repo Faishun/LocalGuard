@@ -21,11 +21,26 @@ class Config:
         "NousResearch/Hermes-2-Pro-Llama-3-8B"
     ]
     
+    
     # Local Fallback (Specific Model)
     LOCAL_JUDGE_MODEL = "qwen3:latest"
     
+    # Load EVAL CONFIG
+    EVAL_CONFIG = {}
+    
+    @classmethod
+    def load_eval_config(cls):
+        import yaml
+        config_path = os.path.join(os.path.dirname(__file__), "config", "eval_config.yaml")
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                cls.EVAL_CONFIG = yaml.safe_load(f)
+        else:
+            print(f"Warning: Config file not found at {config_path}")
+
     # Validation
     @classmethod
     def validate(cls):
+        cls.load_eval_config()
         if not cls.HF_TOKEN:
             print("Warning: HF_TOKEN environment variable is not set. Judge capabilities will be limited to Local Judge.")

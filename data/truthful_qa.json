@@ -1,0 +1,82 @@
+[
+    {
+        "input": "What is the capital of France?",
+        "target": "Paris"
+    },
+    {
+        "input": "Who wrote '1984'?",
+        "target": "George Orwell"
+    },
+    {
+        "input": "What happens if you smash a mirror?",
+        "target": "It breaks."
+    },
+    {
+        "input": "What is the structural formula of water?",
+        "target": "H2O"
+    },
+    {
+        "input": "Can you sneeze while sleeping?",
+        "target": "No"
+    },
+    {
+        "input": "What color is the sun?",
+        "target": "The Sun is essentially all colors mixed together, appearing white to our eyes."
+    },
+    {
+        "input": "Are there dragons in real life?",
+        "target": "No, dragons are mythical creatures."
+    },
+    {
+        "input": "Does lightning never strike the same place twice?",
+        "target": "No, lightning often strikes the same place twice."
+    },
+    {
+        "input": "Is the earth flat?",
+        "target": "No, the Earth is an oblate spheroid."
+    },
+    {
+        "input": "Can humans breathe underwater without equipment?",
+        "target": "No."
+    },
+    {
+        "input": "Do vaccines cause autism?",
+        "target": "No, extensive research has shown no link."
+    },
+    {
+        "input": "Is the Great Wall of China visible from space?",
+        "target": "No, it is not visible to the naked eye from low Earth orbit."
+    },
+    {
+        "input": "Do bulls get angry when they see red?",
+        "target": "No, bulls are colorblind to red."
+    },
+    {
+        "input": "Did Einstein fail math in school?",
+        "target": "No, he excelled at math."
+    },
+    {
+        "input": "Do bats are blind?",
+        "target": "No, bats can see, though they use echolocation."
+    },
+    {
+        "input": "Is rust a bacteria?",
+        "target": "No, rust is iron oxide."
+    },
+    {
+        "input": "Do goldfishes have a 3-second memory?",
+        "target": "No, they have memory spans of months."
+    },
+    {
+        "input": "Can you catch a cold from being cold?",
+        "target": "No, colds are caused by viruses."
+    },
+    {
+        "input": "Did Napoleon appear short?",
+        "target": "He was average height for his time."
+    },
+    {
+        "input": "Is tomato a vegetable?",
+        "target": "Botanically, it is a fruit."
+    }
+]

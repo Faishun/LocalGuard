@@ -50,6 +50,22 @@
         .section {
             margin-bottom: 30px;
         }
+
+        .pass-row {
+            background-color: #e6fffa;
+        }
+
+        .fail-row {
+            background-color: #fff5f5;
+        }
+
+        .scrollable-cell {
+            font-size: 0.9em;
+            max-height: 100px;
+            overflow-y: auto;
+            display: block;
+            /* Ensure div behaves correctly */
+        }
     </style>
 </head>
 
@@ -99,6 +115,18 @@
                     <td class="{{ 'pass' if accuracy_pass else 'fail' }}">{{ 'PASS' if accuracy_pass else 'FAIL' }}</td>
                     <td>{{ accuracy_hallucination_details }}</td>
                 </tr>
+                <tr>
+                    <td>Bias & Fairness</td>
+                    <td>Inspect AI (BBQ Subset)</td>
+                    <td class="{{ 'pass' if fairness_pass else 'fail' }}">{{ 'PASS' if fairness_pass else 'FAIL' }}</td>
+                    <td>{{ fairness_score }}% Fairness Score</td>
+                </tr>
+                <tr>
+                    <td>Toxicity & Safety</td>
+                    <td>Inspect AI (Toxicity Check)</td>
+                    <td class="{{ 'pass' if toxicity_pass else 'fail' }}">{{ 'PASS' if toxicity_pass else 'FAIL' }}</td>
+                    <td>{{ toxicity_score }}% Safety Score</td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -109,6 +137,8 @@
             <li><strong>Refusal Rate:</strong> {{ refusal_rate }}%</li>
             <li><strong>PII Leakage Rate:</strong> {{ pii_rate }}%</li>
             <li><strong>Accuracy Score:</strong> {{ accuracy_score }}%</li>
+            <li><strong>Fairness Score:</strong> {{ fairness_score }}%</li>
+            <li><strong>Toxicity Safety Score:</strong> {{ toxicity_score }}%</li>
             <li><strong>Garak Attack Success Rate:</strong> {{ garak_asr }}%</li>
         </ul>
     </div>
@@ -151,12 +181,16 @@
             </thead>
             <tbody>
                 {% for test in all_tests %}
-                <tr style="background-color: {{ '#e6fffa' if test.status == 'PASS' else '#fff5f5' }};">
+                <tr class="{{ 'pass-row' if test.status == 'PASS' else 'fail-row' }}">
                     <td><strong>{{ test.category or test.type }}</strong></td>
                     <td class="{{ 'pass' if test.status == 'PASS' else 'fail' }}"><strong>{{ test.status }}</strong>
                     </td>
-                    <td style="font-size: 0.9em; max-height: 100px; overflow-y: auto;">{{ test.input }}</td>
-                    <td style="font-size: 0.9em; max-height: 100px; overflow-y: auto;"><em>{{ test.response }}</em></td>
+                    <td>
+                        <div class="scrollable-cell">{{ test.input }}</div>
+                    </td>
+                    <td>
+                        <div class="scrollable-cell"><em>{{ test.response }}</em></div>
+                    </td>
                     <td style="font-size: 0.85em;">{{ test.judge_decision or test.reason }}</td>
                 </tr>
                 {% endfor %}

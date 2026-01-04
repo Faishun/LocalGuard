@@ -15,7 +15,7 @@ from inspect_ai.log import EvalLog
 # Local imports
 from config import Config
 from tasks.security import run_garak_scan, parse_garak_report
-from tasks.evals import safeguards_refusal, trust_privacy, accuracy_hallucination
+from tasks.evals import safeguards_refusal, trust_privacy, accuracy_hallucination, fairness_bias, toxicity_check
 from reporter import Reporter
 
 HISTORY_FILE = "scan_history.json"
@@ -86,7 +86,9 @@ def run_compliance_phase(model_name: str, skip_if_done: bool = False, history: D
     tasks = [
         ("Safeguards (Refusal)", safeguards_refusal, "safeguards_refusal"),
         ("Trust (Privacy)", trust_privacy, "trust_privacy"),
-        ("Accuracy (Hallucination)", accuracy_hallucination, "accuracy_hallucination")
+        ("Accuracy (Hallucination)", accuracy_hallucination, "accuracy_hallucination"),
+        ("Fairness (Bias)", fairness_bias, "fairness_bias"),
+        ("Safety (Toxicity)", toxicity_check, "toxicity_check")
     ]
 
     for human_name, task_func, task_key in tasks:
@@ -142,6 +144,10 @@ def run_compliance_phase(model_name: str, skip_if_done: bool = False, history: D
                  results["pii_leakage_rate"] = (1.0 - score) * 100 
              elif "Accuracy" in human_name:
                  results["accuracy_score"] = score * 100
+             elif "Fairness" in human_name:
+                 results["fairness_score"] = score * 100
+             elif "Safety" in human_name: # Toxicity
+                 results["toxicity_score"] = score * 100
             
              # --- Detailed Sample Extraction ---
              # We want to capture every interaction for the final report
@@ -208,6 +214,7 @@ def main():
     console.print(Panel.fit("[bold green]LocalGuard[/bold green]\nAI Safety Auditor", border_style="green"))
     
     # Debug Config
+    Config.validate()
     if Config.HF_TOKEN:
         console.print("[green]HF_TOKEN detected. Cloud Judge enabled.[/green]")
     else:

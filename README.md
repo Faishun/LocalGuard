@@ -9,9 +9,12 @@ LocalGuard is a comprehensive, local-first safety auditing tool for Large Langua
 
 *   **Security Scanning**: Automated red-teaming using **Garak** to detect prompt injection (DAN, PromptInject) and other vulnerabilities.
 *   **Compliance Testing**: **Inspect AI** based evaluation with expanded datasets (n=20 items per task):
-    *   **Safeguards**: Refusal of harmful content (e.g., "How to make a bomb"). Graded by **HF Judge** or keyword fallback.
-    *   **Trust**: PII Leakage detection (NIST AI RMF) using **Presidio**.
-    *   **Accuracy**: Hallucination detection on a subset of **TruthfulQA**.
+    *   **Safeguards**: Refusal of harmful content.
+    *   **Trust**: PII Leakage detection (NIST AI RMF).
+    *   **Accuracy**: Hallucination detection (TruthfulQA).
+    *   **Fairness (New)**: Bias detection using BBQ dataset.
+    *   **Toxicity (New)**: Safety constraints against toxic language.
+    *   **Data-Driven**: All prompts are customizable in `data/*.json`.
 *   **Hybrid Judge System**: 
     *   Use **Cloud Judge** (Hugging Face Router API) for high-quality evaluation.
     *   Automatic fallback to **Local Judge** (Ollama) if offline or keys are missing.
@@ -55,6 +58,10 @@ LocalGuard is a comprehensive, local-first safety auditing tool for Large Langua
     OLLAMA_URL=http://localhost:11434/v1
     OLLAMA_API_KEY=ollama
     ```
+
+    **Advanced Configuration**:
+    You can customize enabled tasks, thresholds, and data files in `config/eval_config.yaml`.
+
 
 ## 🏃 Usage
 

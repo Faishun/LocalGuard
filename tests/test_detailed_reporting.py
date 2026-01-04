@@ -52,8 +52,8 @@ def test_detailed_reporting_integration(mock_inspect_eval, mock_garak_scan, mock
     
     # 4. Verify Detailed Samples Extracted
     assert "detailed_samples" in comp_results
-    # inspect_eval is called 3 times (refusal, privacy, accuracy), each returning the mock with 1 sample
-    assert len(comp_results["detailed_samples"]) == 3
+    # inspect_eval is called 5 times (refusal, privacy, accuracy, fairness, toxicity), each returning the mock with 1 sample
+    assert len(comp_results["detailed_samples"]) == 5
     sample = comp_results["detailed_samples"][0]
     assert sample["status"] == "PASS"
     assert sample["judge_decision"] == "Judge says YES"

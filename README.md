@@ -44,7 +44,7 @@ Example report (HTML): [LocalGuard_Report_gemma3_4b.html](LocalGuard_Report_gemm
 
 1.  **Clone the Repository**:
     ```bash
-    git clone https://github.com/yourusername/LocalGuard.git
+    git clone https://github.com/overcrash66/LocalGuard.git
     cd LocalGuard
     ```
 

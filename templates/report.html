@@ -26,6 +26,8 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            table-layout: fixed;
+            /* Crucial for preventing overlap in WeasyPrint */
         }
 
         th,
@@ -33,6 +35,11 @@
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
+            vertical-align: top;
+            /* Align top for better readability */
+            word-wrap: break-word;
+            /* Ensure long words break */
+            overflow-wrap: break-word;
         }
 
         th {
@@ -62,25 +69,52 @@
 
         .scrollable-cell {
             font-size: 0.9em;
-            /* max-height removed for PDF to avoid scrolling */
-            /* In HTML view we might want scrolling, but in PDF we want full content or truncated */
-            /* For now, let's allow content to expand in PDF */
+            /* HTML View: Scrollable */
+            max-height: 100px;
+            overflow-y: auto;
+            display: block;
             word-wrap: break-word;
         }
 
         @media print {
             @page {
-                margin: 20mm;
+                size: A4;
+                margin: 15mm;
 
                 @bottom-right {
                     content: "Page " counter(page) " of " counter(pages);
-                    font-size: 10pt;
+                    font-size: 9pt;
                 }
             }
 
+            body {
+                margin: 0;
+            }
+
+            .section {
+                page-break-inside: auto;
+                /* Allow breaking inside sections if needed */
+            }
+
+            h2 {
+                page-break-after: avoid;
+                /* Keep headers with content */
+            }
+
+            tr {
+                page-break-inside: avoid;
+                /* Try to keep rows together */
+            }
+
             .scrollable-cell {
-                max-height: none;
-                overflow: visible;
+                max-height: none !important;
+                overflow: visible !important;
+                display: block;
+            }
+
+            /* Remove fixed height constraints from cells */
+            td {
+                height: auto !important;
             }
         }
     </style>

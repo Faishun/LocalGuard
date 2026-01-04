@@ -2,6 +2,8 @@
 
 LocalGuard is a comprehensive, local-first safety auditing tool for Large Language Models (LLMs). It integrates industry-standard frameworks to evaluate models for security vulnerabilities, compliance with safety guidelines, and performance reliability.
 
+Example report (HTML): [LocalGuard_Report_gemma3_4b.html](LocalGuard_Report_gemma3_4b.html) — a sample audit report generated for the gemma3_4b model.
+
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
 

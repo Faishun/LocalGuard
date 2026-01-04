@@ -49,6 +49,7 @@
 
         .section {
             margin-bottom: 30px;
+            page-break-inside: avoid;
         }
 
         .pass-row {
@@ -61,10 +62,26 @@
 
         .scrollable-cell {
             font-size: 0.9em;
-            max-height: 100px;
-            overflow-y: auto;
-            display: block;
-            /* Ensure div behaves correctly */
+            /* max-height removed for PDF to avoid scrolling */
+            /* In HTML view we might want scrolling, but in PDF we want full content or truncated */
+            /* For now, let's allow content to expand in PDF */
+            word-wrap: break-word;
+        }
+
+        @media print {
+            @page {
+                margin: 20mm;
+
+                @bottom-right {
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 10pt;
+                }
+            }
+
+            .scrollable-cell {
+                max-height: none;
+                overflow: visible;
+            }
         }
     </style>
 </head>

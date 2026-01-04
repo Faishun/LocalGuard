@@ -23,5 +23,14 @@
             "successful_attacks": 0,
             "attack_success_rate": 0.0
         }
+    },
+    "qwen3:latest": {
+        "compliance_tasks": {},
+        "security_done": true,
+        "security_results": {
+            "total_attempts": 8,
+            "successful_attacks": 0,
+            "attack_success_rate": 0.0
+        }
     }
 }

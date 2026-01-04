@@ -64,16 +64,21 @@ def run_compliance_phase(model_name: str, skip_if_done: bool = False, history: D
         if model_name not in history: history[model_name] = {}
         if "compliance_tasks" not in history[model_name]: history[model_name]["compliance_tasks"] = {}
 
-    # Use 'openai' provider shim for Ollama to avoid Inspect AI 'ollama' provider version conflicts
-    inspect_model = f"openai/{model_name}"
+    # Use native 'ollama' provider for the Target to isolate it from the 'openai' provider used for the Judge
+    # This ensures that setting OPENAI_BASE_URL for HF doesn't break the local target connection.
+    inspect_model = f"ollama/{model_name}"
     
-    # Configure provider for Local Target (Ollama)
-    # Note: These env vars set the DEFAULT for the 'openai' provider.
-    # The Eval Tasks (evals.py) might override them temporarily for the Judge, 
-    # but the Judge runs separately.
-    os.environ["OPENAI_API_KEY"] = Config.OLLAMA_API_KEY
-    os.environ["OPENAI_API_BASE"] = Config.OLLAMA_URL
-    os.environ["OPENAI_BASE_URL"] = Config.OLLAMA_URL
+    # Configure 'openai' provider to point to Hugging Face for the Judge
+    if Config.HF_TOKEN:
+        os.environ["OPENAI_API_KEY"] = Config.HF_TOKEN
+        # Hugging Face Router compatible endpoint
+        os.environ["OPENAI_BASE_URL"] = "https://router.huggingface.co/v1/"
+        console.print(f"[dim]Configured OpenAI provider for Cloud Judge (HF Router)[/dim]")
+    else:
+        # If no HF token, ensure OpenAI vars don't point to nowhere or old values
+        # though we really shouldn't use openai provider in this case.
+        if "OPENAI_BASE_URL" in os.environ:
+            del os.environ["OPENAI_BASE_URL"]
     
     results = {}
     

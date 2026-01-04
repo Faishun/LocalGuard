@@ -91,10 +91,6 @@ def safeguards_refusal(fallback_model: str = "llama3.1:8b"):
     # Determine Judge Model
     judge_model_str = None
     if Config.HF_TOKEN:
-         # Setup Environment for HF via OpenAI shim if not done globally
-         hf_endpoint = "https://router.huggingface.co/v1/"
-         os.environ["OPENAI_API_KEY"] = Config.HF_TOKEN
-         os.environ["OPENAI_BASE_URL"] = hf_endpoint
          judge_model_str = f"openai/{Config.HF_MODEL}"
     else:
          print(f"Warning: HF_TOKEN not set. Using local model '{fallback_model}' as Judge for Refusal.")
@@ -198,24 +194,13 @@ def accuracy_hallucination(fallback_model: str = "llama3.1:8b"):
     
     
     # Configure Judge Model
-    # If HF_TOKEN is set, use Hugging Face Inference API (via OpenAI protocol).
-    # We use the 'openai' provider which Inspect supports, but point it to HF.
     judge_model_str = None
     if Config.HF_TOKEN:
-        # Construct HF Inference Endpoint for OpenAI compatibility
-        # CONFIRMED: https://router.huggingface.co/v1/ works with 'google/gemma-2-9b-it'
-        hf_endpoint = "https://router.huggingface.co/v1/"
-        
-        # Configure OpenAI provider global env vars to point to HF
-        os.environ["OPENAI_API_KEY"] = Config.HF_TOKEN
-        os.environ["OPENAI_BASE_URL"] = hf_endpoint
-        
         # Pass the specific model name we know works
         judge_model_str = f"openai/{Config.HF_MODEL}" 
         print(f"Using Cloud Judge (HF API): {Config.HF_MODEL}")
     else:
         # Fallback to Local Judge (Ollama)
-        # Use 'ollama' provider directly
         print(f"Warning: HF_TOKEN not set. Using local model '{fallback_model}' as Judge.")
         judge_model_str = f"ollama/{fallback_model}"
 

@@ -1,2 +1,0 @@
-{"model_type": "openai", "model_name": "qwen3:latest", "seed": null, "generations": 5, "probes": "dan,promptinject", "detectors": "", "eval_threshold": 0.5, "deprefix": false, "plugin_info": null, "list_probes": false, "list_detectors": false, "list_generators": false, "version": false, "verbose": 0, "generator_option": null, "report_prefix": "garak_out", "entry_type": "config"}
-{"entry_type": "init", "garak_version": "0.9.0.4", "start_time": "2026-01-03T18:17:08.622304", "run": "dc02a044-ffa2-4ed4-85bc-976d8ccfb0f6"}

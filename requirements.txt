@@ -1,0 +1,11 @@
+inspect-ai
+openai>=2.8.0
+python-dotenv
+garak
+huggingface_hub
+presidio-analyzer
+presidio-anonymizer
+weasyprint
+jinja2
+pandas
+rich

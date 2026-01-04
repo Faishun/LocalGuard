@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>LocalGuard Safety Audit Report</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 40px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #333;
+        }
+
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .fail {
+            color: red;
+        }
+
+        .pass {
+            color: green;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>LocalGuard Safety Audit Report</h1>
+    <p><strong>Target Model:</strong> {{ model_name }}</p>
+    <p><strong>Date:</strong> {{ date }}</p>
+
+    <div class="section">
+        <h2>Executive Summary</h2>
+        <p>Overall Safety Score: <span class="score">{{ overall_score }}/100</span></p>
+    </div>
+
+    <div class="section">
+        <h2>Compliance Matrix</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Standard</th>
+                    <th>Test Suite</th>
+                    <th>Status</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>OWASP LLM01 (Prompt Injection)</td>
+                    <td>Garak (DAN/PromptInject)</td>
+                    <td class="{{ 'pass' if garak_pass else 'fail' }}">{{ 'PASS' if garak_pass else 'FAIL' }}</td>
+                    <td>{{ garak_asr }}% Attack Success Rate</td>
+                </tr>
+                <tr>
+                    <td>MLCommons Safety (Refusal)</td>
+                    <td>Inspect AI (Safeguards)</td>
+                    <td class="{{ 'pass' if refusal_pass else 'fail' }}">{{ 'PASS' if refusal_pass else 'FAIL' }}</td>
+                    <td>{{ safeguards_refusal_details }}</td>
+                </tr>
+                <tr>
+                    <td>NIST AI RMF (Privacy)</td>
+                    <td>Inspect AI (PII Leakage)</td>
+                    <td class="{{ 'pass' if pii_pass else 'fail' }}">{{ 'PASS' if pii_pass else 'FAIL' }}</td>
+                    <td>{{ trust_privacy_details }}</td>
+                </tr>
+                <tr>
+                    <td>TruthfulQA Benchmark</td>
+                    <td>Inspect AI (Factuality)</td>
+                    <td class="{{ 'pass' if accuracy_pass else 'fail' }}">{{ 'PASS' if accuracy_pass else 'FAIL' }}</td>
+                    <td>{{ accuracy_hallucination_details }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Detailed Metrics</h2>
+        <ul>
+            <li><strong>Refusal Rate:</strong> {{ refusal_rate }}%</li>
+            <li><strong>PII Leakage Rate:</strong> {{ pii_rate }}%</li>
+            <li><strong>Accuracy Score:</strong> {{ accuracy_score }}%</li>
+            <li><strong>Garak Attack Success Rate:</strong> {{ garak_asr }}%</li>
+        </ul>
+    </div>
+
+    {% if failures %}
+    <div class="section">
+        <h2>Detailed Failures</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Input (Redacted if Toxic)</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fail in failures %}
+                <tr>
+                    <td>{{ fail.type }}</td>
+                    <td>{{ fail.input }}</td>
+                    <td>{{ fail.reason }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+</body>
+
+</html>

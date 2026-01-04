@@ -32,7 +32,10 @@ Example report (HTML): [LocalGuard_Report_gemma3_4b.html](LocalGuard_Report_gemm
 *   **Python 3.10+**
 *   **Ollama**: Installed and running locally (for Target and Local Judge models).
     *   Ensure models are pulled: `ollama pull llama3.1:8b`, `ollama pull qwen3`, etc.
-*   **GTK Runtime** (Optional, Windows): Required for PDF generation via WeasyPrint. (The app falls back to HTML if missing).
+*   **GTK3 Runtime** (Required for PDF Generation on Windows):
+    *   Download and install from [latest releases](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases).
+    *   **Restart your terminal/IDE** after installation.
+    *   *Note: If missing, reports will be generated as HTML.*
 
 ## 🛠️ Installation
 
@@ -77,7 +80,11 @@ python -m main
 2.  **Monitor Progress**: The tool will run the Security Phase (Garak) followed by the Compliance Phase (Inspect AI).
 3.  **View Report**: Upon completion, a report (e.g., `LocalGuard_Report_qwen3_latest.pdf`) will be generated in the project folder.
 
-## 🏗️ Architecture
+### PDF Generation Utility
+If automatic PDF generation fails or you need to convert an existing HTML report manually, use the included helper script:
+```bash
+python convert_to_pdf.py your_report.html
+```
 
 LocalGuard orchestrates two powerful libraries:
 

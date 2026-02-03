@@ -20,6 +20,16 @@ Custom / Other
 
 Populate the .env from .env.example with **your specific environment.**
 
+If you get
+
+```bash
+Segmentation fault
+```
+
+from Python after runnig **python -m main,** simply rerun it, since other dependency is installed on the go and might not follow the entire process.
+
+Enjoy!
+
 ### PDF Generation Utility
 If automatic PDF generation fails or you need to convert an existing HTML report manually, use the included helper script:
 ```bash

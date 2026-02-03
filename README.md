@@ -14,6 +14,10 @@ Run the main orchestrator:
 python -m main
 ```
 
+```bash
+Custom / Other
+```
+
 Populate the .env from .env.example with **your specific environment.**
 
 ### PDF Generation Utility

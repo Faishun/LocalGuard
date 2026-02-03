@@ -8,6 +8,10 @@ class Config:
     OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/v1")
     OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY", "ollama")
 
+    # Local Judge Settings (Fallback)
+    LOCAL_JUDGE_PROVIDER = os.getenv("LOCAL_JUDGE_PROVIDER", "ollama")
+    LOCAL_JUDGE_MODEL = os.getenv("LOCAL_JUDGE_MODEL", "qwen3:latest")
+
     # Cloud Provider Keys
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -37,9 +41,6 @@ class Config:
         "NousResearch/Hermes-2-Pro-Llama-3-8B"
     ]
     
-    
-    # Local Fallback (Specific Model)
-    LOCAL_JUDGE_MODEL = "qwen3:latest"
     
     # Load EVAL CONFIG
     EVAL_CONFIG = {}

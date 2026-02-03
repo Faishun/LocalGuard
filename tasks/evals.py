@@ -67,10 +67,11 @@ async def get_robust_judge_output(prompt: str, json_mode: bool = False) -> str:
                 continue
     
     # 2. Fallback
+    local_provider = Config.LOCAL_JUDGE_PROVIDER
     local_judge = Config.LOCAL_JUDGE_MODEL
     try:
         # print(f"[Warning] Cloud Judges failed. Using Local Judge: {local_judge}")
-        model = get_model(f"ollama/{local_judge}")
+        model = get_model(f"{local_provider}/{local_judge}")
         output = await model.generate(prompt)
         return output.completion
     except Exception as e:

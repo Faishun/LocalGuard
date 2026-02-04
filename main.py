@@ -19,10 +19,16 @@ from tasks.evals import safeguards_refusal, trust_privacy, accuracy_hallucinatio
 from reporter import Reporter
 
 HISTORY_FILE = "scan_history.json"
+DISABLE_HISTORY_ENV = "LOCALGUARD_DISABLE_HISTORY"
 
 console = Console()
 
+def _history_disabled() -> bool:
+    return os.getenv(DISABLE_HISTORY_ENV, "").strip().lower() in {"1", "true", "yes", "y"}
+
 def load_history() -> Dict[str, Any]:
+    if _history_disabled():
+        return {}
     if os.path.exists(HISTORY_FILE):
         try:
             with open(HISTORY_FILE, 'r') as f:
@@ -32,6 +38,8 @@ def load_history() -> Dict[str, Any]:
     return {}
 
 def save_history(history: Dict[str, Any]):
+    if _history_disabled():
+        return
     with open(HISTORY_FILE, 'w') as f:
         json.dump(history, f, indent=4)
 
@@ -45,7 +53,13 @@ def run_security_phase(model_name: str, skip_if_done: bool = False, history: Dic
 
     # Run Garak in a way that we can show progress or just wait
     # Since it's a subprocess, we just wait.
-    run_garak_scan(model_name, provider=history.get(model_name, {}).get("provider", "ollama"))
+    garak_ok = run_garak_scan(model_name, provider=history.get(model_name, {}).get("provider", "ollama"))
+    if not garak_ok:
+        return {
+            "error": "Garak scan failed",
+            "attack_success_rate": 0.0,
+            "failures": []
+        }
     
     # Parse results
     results = parse_garak_report()
@@ -266,6 +280,11 @@ def main():
     provider_label = Prompt.ask("Select Provider", choices=provider_choices, default="Ollama (Local)")
     provider = Config.PROVIDERS[provider_label]
     
+    # Optional: disable cache/history for this run
+    disable_cache = Prompt.ask("Disable cache for this run?", choices=["yes", "no"], default="no")
+    if disable_cache == "yes":
+        os.environ[DISABLE_HISTORY_ENV] = "1"
+
     # 2. Get Model Name
     default_model = "llama3.1:8b" if provider == "ollama" else "gpt-4o"
     model_name = Prompt.ask("Enter Model Name", default=default_model)

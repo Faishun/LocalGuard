@@ -39,6 +39,23 @@ If automatic PDF generation fails or you need to convert an existing HTML report
 python convert_to_pdf.py your_report.html
 ```
 
+## ❯❯❯❯ Increase scanning speed
+
+You might receive a message like this from garak:
+<img width="1769" height="73" alt="image" src="https://github.com/user-attachments/assets/289ddcf0-c1d1-4bb4-9883-fc8240163bf9" />
+
+If your models supports it, you can add it in **tasks/security.py:**
+
+```bash
+command = [
+        sys.executable, "-m", "garak",
+        "--probes", "dan,promptinject",
+        "--report_prefix", report_prefix,
+        "--generations", "5",
+        "--parallel_attempts", "16"
+    ]
+```
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

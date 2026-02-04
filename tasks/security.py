@@ -1,15 +1,26 @@
 import subprocess
 import json
 import os
+import importlib.util
 from typing import Dict, Any
 
-def run_garak_scan(target_model_name: str, provider: str = "ollama", report_prefix: str = "garak_out") -> None:
+def run_garak_scan(target_model_name: str, provider: str = "ollama", report_prefix: str = "garak_out") -> bool:
     """
     Runs Garak security scanner against the specified model.
     Results are saved to the default Garak report directory or local.
     """
     import sys
     from config import Config
+
+    def _garak_has_litellm() -> bool:
+        return importlib.util.find_spec("garak.generators.litellm") is not None
+
+    def _openai_has_legacy_errors() -> bool:
+        try:
+            import openai  # type: ignore
+            return hasattr(openai, "error")
+        except Exception:
+            return False
     
     # Base command
     command = [
@@ -32,9 +43,22 @@ def run_garak_scan(target_model_name: str, provider: str = "ollama", report_pref
         env["OPENAI_API_KEY"] = Config.OLLAMA_API_KEY
         
     elif provider == "openai":
-        command.extend(["--model_type", "openai", "--model_name", target_model_name])
+        # Prefer litellm if garak supports it; otherwise fallback to legacy openai generator.
+        if _garak_has_litellm():
+            command.extend(["--model_type", "litellm", "--model_name", f"openai/{target_model_name}"])
+        elif _openai_has_legacy_errors():
+            command.extend(["--model_type", "openai", "--model_name", target_model_name])
+        else:
+            print("Error: Garak does not have the litellm generator and your OpenAI SDK is v1+.")
+            print("Fix: upgrade garak to a version that includes litellm, or pin openai<1.0,")
+            print("or use an Ollama provider for security scanning.")
+            return False
         # Requires OPENAI_API_KEY in env
-        if Config.OPENAI_API_KEY: env["OPENAI_API_KEY"] = Config.OPENAI_API_KEY
+        if Config.OPENAI_API_KEY:
+            env["OPENAI_API_KEY"] = Config.OPENAI_API_KEY
+        # If user set an OpenAI-compatible base (e.g., LM Studio), propagate it
+        if "OPENAI_API_BASE" not in env and os.getenv("OPENAI_BASE_URL"):
+            env["OPENAI_API_BASE"] = os.getenv("OPENAI_BASE_URL")
         
     elif provider == "anthropic":
         # Garak supports anthropic directly or via litellm
@@ -53,16 +77,30 @@ def run_garak_scan(target_model_name: str, provider: str = "ollama", report_pref
         
     else:
         # Fallback / Custom (assume OpenAI compatible)
-        # For vLLM or others, user likely provided full URL in env or we assume defaults
-        command.extend(["--model_type", "openai", "--model_name", target_model_name])
+        # Prefer litellm when available, otherwise legacy openai generator
+        if _garak_has_litellm():
+            command.extend(["--model_type", "litellm", "--model_name", f"openai/{target_model_name}"])
+        elif _openai_has_legacy_errors():
+            command.extend(["--model_type", "openai", "--model_name", target_model_name])
+        else:
+            print("Error: Garak does not have the litellm generator and your OpenAI SDK is v1+.")
+            print("Fix: upgrade garak to a version that includes litellm, or pin openai<1.0,")
+            print("or use an Ollama provider for security scanning.")
+            return False
+        if Config.OPENAI_API_KEY:
+            env["OPENAI_API_KEY"] = Config.OPENAI_API_KEY
+        if "OPENAI_API_BASE" not in env and os.getenv("OPENAI_BASE_URL"):
+            env["OPENAI_API_BASE"] = os.getenv("OPENAI_BASE_URL")
         
     try:
         subprocess.run(command, check=True, env=env)
         print("Garak scan completed.")
+        return True
     except subprocess.CalledProcessError as e:
         print(f"Error running Garak: {e}")
     except FileNotFoundError:
         print("Error: 'garak' command not found. Please ensure it is installed.")
+    return False
 
 def parse_garak_report(report_path: str = "garak_out.report.jsonl") -> Dict[str, Any]:
     """

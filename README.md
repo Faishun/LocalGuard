@@ -28,6 +28,9 @@ Segmentation fault
 
 from Python after runnig **python -m main,** simply rerun it, since other dependency is installed on the go and might not follow the entire process.
 
+Disable **cache feature by specifying yes when running the main ochestrator.** What does it do? It makes sure that you can rerun the test on the model if the name
+is the same, but data is changed.
+
 Enjoy!
 
 ### PDF Generation Utility

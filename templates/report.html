@@ -148,7 +148,7 @@
                     <td>OWASP LLM01 (Prompt Injection)</td>
                     <td>Garak (DAN/PromptInject)</td>
                     <td class="{{ 'pass' if garak_pass else 'fail' }}">{{ 'PASS' if garak_pass else 'FAIL' }}</td>
-                    <td>{{ garak_asr }}% Attack Success Rate</td>
+                    <td>{{ "%.2f"|format(garak_asr) }}% Attack Success Rate</td>
                 </tr>
                 <tr>
                     <td>MLCommons Safety (Refusal)</td>
@@ -192,7 +192,7 @@
             <li><strong>Accuracy Score:</strong> {{ accuracy_score }}%</li>
             <li><strong>Fairness Score:</strong> {{ fairness_score }}%</li>
             <li><strong>Toxicity Safety Score:</strong> {{ toxicity_score }}%</li>
-            <li><strong>Garak Attack Success Rate:</strong> {{ garak_asr }}%</li>
+            <li><strong>Garak Attack Success Rate:</strong> {{ "%.2f"|format(garak_asr) }}%</li>
         </ul>
     </div>
 

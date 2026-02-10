@@ -43,6 +43,61 @@ def save_history(history: Dict[str, Any]):
     with open(HISTORY_FILE, 'w') as f:
         json.dump(history, f, indent=4)
 
+def load_history_from_file() -> Dict[str, Any]:
+    """Load history from disk regardless of DISABLE_HISTORY_ENV (for report-only mode)."""
+    if os.path.exists(HISTORY_FILE):
+        try:
+            with open(HISTORY_FILE, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+def build_combined_results_from_history(model_name: str, history: Dict[str, Any]) -> Dict[str, Any]:
+    """Build the combined_results dict from saved history so we can regenerate the report without re-scanning."""
+    entry = history.get(model_name, {})
+    sec = entry.get("security_results", {})
+    tasks = entry.get("compliance_tasks", {})
+
+    combined = {
+        "model_name": model_name,
+        "failures": list(sec.get("failures", [])),
+        "garak_asr": sec.get("attack_success_rate", 0),
+        "refusal_rate": 0,
+        "pii_leakage_rate": 0,
+        "accuracy_score": 0,
+        "fairness_score": 0,
+        "toxicity_score": 0,
+        "safeguards_refusal_details": "",
+        "trust_privacy_details": "",
+        "accuracy_hallucination_details": "",
+    }
+
+    task_map = [
+        ("safeguards_refusal", "refusal_rate", 1.0),
+        ("trust_privacy", "pii_leakage_rate", -1.0),  # (1 - score) * 100
+        ("accuracy_hallucination", "accuracy_score", 1.0),
+        ("fairness_bias", "fairness_score", 1.0),
+        ("toxicity_check", "toxicity_score", 1.0),
+    ]
+    for task_key, result_key, mult in task_map:
+        t = tasks.get(task_key, {})
+        score = t.get("score", 0)
+        if result_key == "pii_leakage_rate":
+            combined[result_key] = (1.0 - score) * 100
+        else:
+            combined[result_key] = score * 100
+        details_key = f"{task_key}_details"
+        combined[details_key] = t.get("details", "")
+
+    detailed_samples = []
+    for task_key in ("safeguards_refusal", "trust_privacy", "accuracy_hallucination", "fairness_bias", "toxicity_check"):
+        for s in tasks.get(task_key, {}).get("samples", []):
+            detailed_samples.append(s)
+    combined["all_tests"] = combined["failures"] + detailed_samples
+
+    return combined
+
 def run_security_phase(model_name: str, skip_if_done: bool = False, history: Dict = None) -> Dict[str, Any]:
     """Phase 1: Security Scanning with Garak"""
     console.print(Panel("[bold red]Phase 1: Security Scanning (Garak)[/bold red]", border_style="red"))
@@ -274,18 +329,53 @@ def main():
     else:
         console.print("[yellow]HF_TOKEN not found. Using Local Judge.[/yellow]")
 
-    # 1. Get Model Name
-    # 1. Provider Selection
+    mode = Prompt.ask("Run full audit or regenerate report from saved results?", choices=["full", "report only"], default="full")
+
+    if mode == "report only":
+        history = load_history_from_file()
+        if not history:
+            console.print("[red]No saved scan history found. Run a full audit first.[/red]")
+            return
+        # Models that have at least security or compliance data
+        models_with_data = [
+            m for m in history
+            if history.get(m, {}).get("security_results") or history.get(m, {}).get("compliance_tasks")
+        ]
+        if not models_with_data:
+            console.print("[red]No model in history has scan results. Run a full audit first.[/red]")
+            return
+        model_name = Prompt.ask("Select model to regenerate report for", choices=models_with_data)
+        combined_results = build_combined_results_from_history(model_name, history)
+        # Re-parse the latest Garak report so ASR is correct (history may have been saved with old parser)
+        garak_parsed = parse_garak_report()
+        if "error" not in garak_parsed:
+            combined_results["garak_asr"] = garak_parsed.get("attack_success_rate", 0)
+            combined_results["failures"] = list(garak_parsed.get("failures", []))
+            # Rebuild all_tests: Garak failures + compliance samples from history
+            tasks = history.get(model_name, {}).get("compliance_tasks", {})
+            detailed_samples = []
+            for task_key in ("safeguards_refusal", "trust_privacy", "accuracy_hallucination", "fairness_bias", "toxicity_check"):
+                for s in tasks.get(task_key, {}).get("samples", []):
+                    detailed_samples.append(s)
+            combined_results["all_tests"] = combined_results["failures"] + detailed_samples
+            console.print(f"[dim]Garak report re-parsed: ASR {combined_results['garak_asr']:.2f}%[/dim]")
+        safe_model_name = model_name.replace(":", "_").replace("/", "_")
+        report_filename = f"LocalGuard_Report_{safe_model_name}.pdf"
+        console.print(Panel("[bold magenta]Generating Report[/bold magenta]", border_style="magenta"))
+        reporter = Reporter()
+        final_path = reporter.generate_report(combined_results, report_filename)
+        console.print(f"[bold green]Report saved to: {final_path}[/bold green]")
+        return
+
+    # Full audit: Provider and model
     provider_choices = list(Config.PROVIDERS.keys())
     provider_label = Prompt.ask("Select Provider", choices=provider_choices, default="Ollama (Local)")
     provider = Config.PROVIDERS[provider_label]
     
-    # Optional: disable cache/history for this run
     disable_cache = Prompt.ask("Disable cache for this run?", choices=["yes", "no"], default="no")
     if disable_cache == "yes":
         os.environ[DISABLE_HISTORY_ENV] = "1"
 
-    # 2. Get Model Name
     default_model = "llama3.1:8b" if provider == "ollama" else "gpt-4o"
     model_name = Prompt.ask("Enter Model Name", default=default_model)
     

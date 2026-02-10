@@ -27,7 +27,7 @@ def run_garak_scan(target_model_name: str, provider: str = "ollama", report_pref
         sys.executable, "-m", "garak",
         "--probes", "dan,promptinject",
         "--report_prefix", report_prefix,
-        "--generations", "5" 
+        "--generations", "5"
     ]
     
     # Environment Setup
@@ -107,34 +107,36 @@ def parse_garak_report(report_path: str = "garak_out.report.jsonl") -> Dict[str,
     Parses the Garak JSONL report to calculate Attack Success Rate.
     Searches for the report in CWD and Garak default directories.
     """
-    # Search logic for the report file
-    candidates = [report_path]
-    
-    # Check default Garak directories (Linux/Mac/Windows .local style)
+    # Garak writes to its default run dir (e.g. ~/.local/share/garak/garak_runs/).
+    # Prefer that location over CWD so we always use the report from the run we just did.
     from pathlib import Path
     home = Path.home()
-    # Common locations for Garak output
     garak_dirs = [
         home / ".local" / "share" / "garak" / "garak_runs",
         home / "AppData" / "Local" / "garak" / "garak_runs"
     ]
-    
+
+    candidates = []
+    seen = set()
     for d in garak_dirs:
         if d.exists():
-            # Find files matching the prefix, sorted by mtime (newest first)
-            found = list(d.glob(f"garak_out*.report.jsonl"))
+            found = list(d.glob("garak_out*.report.jsonl"))
             found.sort(key=os.path.getmtime, reverse=True)
-            if found:
-                candidates.extend([str(f) for f in found])
+            for f in found:
+                p = str(f)
+                if p not in seen:
+                    seen.add(p)
+                    candidates.append(p)
+    # CWD as fallback (e.g. if Garak was run with a custom report path)
+    cwd_path = os.path.abspath(report_path)
+    if cwd_path not in seen and os.path.exists(report_path):
+        candidates.append(cwd_path)
 
-    final_report_path = None
-    for p in candidates:
-        if os.path.exists(p):
-            final_report_path = p
-            break
+    # Prefer Garak default dir (newest there), then CWD
+    final_report_path = candidates[0] if candidates else None
             
     if not final_report_path:
-        print(f"[Warning] Garak report not found. Searched: {candidates[:1]} and standard dirs.")
+        print("[Warning] Garak report not found. Searched Garak run dirs and CWD.")
         return {"error": "Report file not found", "attack_success_rate": 0.0}
     
     print(f"Parsing Garak report: {final_report_path}")
@@ -147,21 +149,43 @@ def parse_garak_report(report_path: str = "garak_out.report.jsonl") -> Dict[str,
         for line in f:
             try:
                 record = json.loads(line)
-                # Garak report structure:
-                # { "entry_type": "eval", "probe": "...", "prompt": "...", "status": "fail", "output": "..." }
-                
-                if record.get("entry_type") == "eval":
+                entry_type = record.get("entry_type")
+
+                # Newer Garak schema (0.13+):
+                # {"entry_type":"eval","probe":"...","detector":"...","passed":17,"total":127}
+                if entry_type == "eval" and "passed" in record and "total" in record:
+                    passed = int(record.get("passed", 0) or 0)
+                    total = int(record.get("total", 0) or 0)
+                    if total <= 0:
+                        continue
+
+                    failed = max(total - passed, 0)
+                    total_attempts += total
+                    successful_attacks += failed
+
+                    if failed > 0:
+                        probe_name = record.get("probe", "Unknown Probe")
+                        detector_name = record.get("detector", "Unknown Detector")
+                        asr = (failed / total) * 100
+                        failures.append({
+                            "type": f"Garak Security ({probe_name})",
+                            "input": f"Detector: {detector_name}",
+                            "response": f"Passed {passed}/{total}",
+                            "reason": f"{failed}/{total} attacks succeeded ({asr:.2f}% ASR)",
+                            "status": "FAIL"
+                        })
+                    continue
+
+                # Older schema fallback:
+                # {"entry_type":"eval","probe":"...","prompt":"...","status":"fail","output":"..."}
+                if entry_type == "eval":
                     total_attempts += 1
-                    
-                    if record.get("status") == "fail": 
+                    if str(record.get("status", "")).lower() == "fail":
                         successful_attacks += 1
-                        
-                        # Extract details for the report
-                        # Garak structure varies slightly by version, safely get keys
+
                         probe_name = record.get("probe", "Unknown Probe")
                         prompt_text = record.get("prompt", "N/A")
                         model_output = record.get("output", "N/A")
-                        
                         failures.append({
                             "type": f"Garak Security ({probe_name})",
                             "input": prompt_text,

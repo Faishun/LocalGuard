@@ -124,7 +124,6 @@ def run_security_phase(model_name: str, skip_if_done: bool = False, history: Dic
 def run_compliance_phase(model_name: str, skip_if_done: bool = False, history: Dict = None) -> Dict[str, Any]:
     """Phase 2: Compliance & Safety with Inspect AI"""
     console.print(Panel("[bold blue]Phase 2: Compliance & Safety (Inspect AI)[/bold blue]", border_style="blue"))
-    
 
     # Initialize history structure for this model if strictly needed here, 
     # but passed 'history' dict should be mutable and persist.
@@ -156,17 +155,13 @@ def run_compliance_phase(model_name: str, skip_if_done: bool = False, history: D
     
     console.print(f"[dim]Compliance Target: {inspect_model}[/dim]")
     
-    # Configure 'openai' provider to point to Hugging Face for the Judge
+    # Configure 'openai' provider for the Judge
     if Config.HF_TOKEN:
         os.environ["OPENAI_API_KEY"] = Config.HF_TOKEN
-        # Hugging Face Router compatible endpoint
         os.environ["OPENAI_BASE_URL"] = "https://router.huggingface.co/v1/"
         console.print(f"[dim]Configured OpenAI provider for Cloud Judge (HF Router)[/dim]")
-    else:
-        # If no HF token, ensure OpenAI vars don't point to nowhere or old values
-        # though we really shouldn't use openai provider in this case.
-        if "OPENAI_BASE_URL" in os.environ:
-            del os.environ["OPENAI_BASE_URL"]
+    # else: leave OPENAI_BASE_URL and OPENAI_API_KEY as set by the caller (e.g. suite_web runner
+    # passes judge base URL like http://localhost:8000/v1); do not delete them.
     
     results = {}
     

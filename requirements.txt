@@ -1,7 +1,6 @@
 inspect-ai
 openai>=2.8.0
 python-dotenv
-garak==0.13.3
 huggingface_hub
 presidio-analyzer
 presidio-anonymizer
